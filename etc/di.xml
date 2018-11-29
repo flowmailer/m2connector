@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+  <preference for="\Magento\Framework\Mail\Message" type="Flowmailer\M2Connector\Model\Mail\Message"/>
+  <preference for="\Magento\Framework\Mail\Template\TransportBuilder" type="Flowmailer\M2Connector\Model\Mail\Template\TransportBuilder"/>
+  <preference for="\Magento\Framework\Mail\Transport" type="Flowmailer\M2Connector\Model\Transport"/>
+  <preference for="\Magento\Email\Model\Transport" type="Flowmailer\M2Connector\Model\Transport"/>
+</config>
