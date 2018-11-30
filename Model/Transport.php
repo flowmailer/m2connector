@@ -56,10 +56,6 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 		ScopeConfigInterface $scopeConfig,
 		EncryptorInterface   $encryptor
 	) {
-		if(!$message instanceof \Zend_Mail) {
-			throw new \InvalidArgumentException('The message should be an instance of \Zend_Mail');
-		}
-
 		$this->_logger		= $loggerInterface;
 		$this->_message		= $message;
 		$this->_moduleManager   = $moduleManager;
@@ -80,6 +76,7 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 	* @return string
 	*/
 	private function _getSubmitMessages() {
+
 		$text	   = $this->_message->getBodyText(false);
 		$html	   = $this->_message->getBodyHtml(false);
 
@@ -130,6 +127,49 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 	}
 
 	/**
+	* Returns a string with the JSON request for the API from the current message
+	*
+	* @return string
+	*/
+	private function _getSubmitMessagesZend2() {
+
+		$raw = $this->_message->getRawMessage();
+		$rawb64 = base64_encode($raw);
+
+		$zendmessage = \Zend\Mail\Message::fromString($raw);
+
+		$from = $zendmessage->getFrom()->current()->getEmail();
+
+		$recipients = array();
+		foreach($zendmessage->getTo() as $recipient) {
+			$recipients[] = $recipient->getEmail();
+		}
+		foreach($zendmessage->getCc() as $recipient) {
+			$recipients[] = $recipient->getEmail();
+		}
+		foreach($zendmessage->getBcc() as $recipient) {
+			$recipients[] = $recipient->getEmail();
+		}
+
+		$messages = array();
+		foreach($recipients as $recipient) {
+			$message = new SubmitMessage();
+
+			$message->messageType = 'EMAIL';
+			$message->senderAddress = $from;
+			$message->recipientAddress = trim($recipient);
+			$message->mimedata = $rawb64;
+
+			if($this->_message instanceof \Flowmailer\M2Connector\Model\Mail\Message) {
+				$message->data = $this->_message->getTemplateVars();
+			}
+
+			$messages[] = $message;
+		}
+		return $messages;
+	}
+
+	/**
 	* Sets the message
 	*
 	* @param   MessageInterface  $message
@@ -137,10 +177,6 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 	* @throws  \Magento\Framework\Exception\MailException
 	*/
 	public function setMessage(MessageInterface $message) {
-		if (!$message instanceof \Zend_Mail) {
-			throw new \InvalidArgumentException('The message should be an instance of \Zend_Mail');
-		}
-
 		$this->_message = $message;
 	}
 
@@ -154,7 +190,11 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 		if($this->_enabled) {
 			try {
 				$this->_logger->debug('[Flowmailer] Sending message');
-				$messages = $this->_getSubmitMessages();
+				if($this->_message instanceof \Zend_Mail) {
+					$messages = $this->_getSubmitMessages();
+				} else {
+					$messages = $this->_getSubmitMessagesZend2();
+				}
 
 				$accountId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_account_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 				$apiId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
