@@ -13,7 +13,7 @@ use Flowmailer\M2Connector\Helper\API\FlowmailerAPI;
 use Flowmailer\M2Connector\Helper\API\SubmitMessage;
 use Flowmailer\M2Connector\Helper\API\Attachment;
 
-class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface {
+class Transport extends \Magento\Framework\Mail\Transport implements TransportInterface {
 
 	/**
 	* @var \Magento\Framework\Mail\MessageInterface
@@ -54,8 +54,11 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 		LoggerInterface      $loggerInterface,
 		Manager		     $moduleManager,
 		ScopeConfigInterface $scopeConfig,
-		EncryptorInterface   $encryptor
+		EncryptorInterface   $encryptor,
+		$parameters = null
 	) {
+		parent::__construct($message, $parameters);
+
 		$this->_logger		= $loggerInterface;
 		$this->_message		= $message;
 		$this->_moduleManager   = $moduleManager;
@@ -64,10 +67,6 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 
 		$this->_enabled = $this->_scopeConfig->isSetFlag('fmconnector/api_credentials/enable', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 		$this->_enabled = $this->_enabled && $this->_moduleManager->isOutputEnabled('Flowmailer_M2Connector');
-
-		if(!$this->_enabled) {
-			parent::__construct();
-		}
 	}
 
 	/**
@@ -88,7 +87,6 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 		}
 
 		$from = $this->_message->getFrom();
-		$replyTo = $this->_message->getReplyTo();
 
 		$messages = array();
 		foreach($this->_message->getRecipients() as $recipient) {
@@ -138,7 +136,11 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 
 		$zendmessage = \Zend\Mail\Message::fromString($raw);
 
-		$from = $zendmessage->getFrom()->current()->getEmail();
+		if($zendmessage->getFrom()->count() > 0) {
+			$from = $zendmessage->getFrom()->current()->getEmail();
+		} else {
+			$from = '';
+		}
 
 		$recipients = array();
 		foreach($zendmessage->getTo() as $recipient) {
@@ -204,10 +206,15 @@ class Transport extends \Zend_Mail_Transport_Smtp implements TransportInterface 
 
 				foreach($messages as $message) {
 					$result = $api->submitMessage($message);
-				$this->_logger->debug('[Flowmailer] Sending message done ' . var_export($result, true));
+
+					if($result['headers']['ResponseCode'] != 201) {
+						throw new \Exception(json_encode($result));
+					}
+
+					$this->_logger->debug('[Flowmailer] Sending message done ' . var_export($result, true));
 				}
 			} catch (\Exception $e) {
-				$this->_logger->debug('[Flowmailer] Error sending message : ' . $e->getMessage());
+				$this->_logger->warn('[Flowmailer] Error sending message : ' . $e->getMessage());
 				throw new MailException(new Phrase($e->getMessage()), $e);
 			}
 		} else {

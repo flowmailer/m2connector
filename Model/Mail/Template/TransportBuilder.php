@@ -17,6 +17,8 @@ class TransportBuilder extends \Magento\Framework\Mail\Template\TransportBuilder
    */
     protected $_logger;
 
+    protected $_imageHelper;
+
     /**
      * @param FactoryInterface $templateFactory
      * @param MessageInterface $message
