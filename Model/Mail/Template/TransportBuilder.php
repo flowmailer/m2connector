@@ -45,7 +45,11 @@ class TransportBuilder extends \Magento\Framework\Mail\Template\TransportBuilder
 		// zodat de product array met image urls mee komt
                 $orgdata->getProduct();
 	    }
-//            $this->_logger->warn('[Flowmailer] object class ' . get_class($data));
+	    if($orgdata instanceof \Magento\Sales\Model\Order\Shipment) {
+                $orgdata->getTracks();
+                $orgdata->getComments();
+	    }
+            $this->_logger->warn('[Flowmailer] extensible object class ' . get_class($data));
 	    $data = $data->getData();
 //	    if($orgdata instanceof \Magento\Sales\Model\Order\Item) {
 //                $data['small_image'] = $this->_imageHelper->init($orgdata->getProduct(), 'small_image', ['type'=>'small_image'])->keepAspectRatio(true)->resize('65','65')->getUrl();
@@ -59,15 +63,23 @@ class TransportBuilder extends \Magento\Framework\Mail\Template\TransportBuilder
 	    if($orgdata instanceof \Magento\Customer\Model\Customer) {
                 $data['rp_token'] = $orgdata->getRpToken();
 	    }
-	} else if($data instanceof \Magento\Customer\Model\Data\CustomerSecure) {
+
+	} else if($data instanceof \Magento\Framework\DataObject) {
             $orgdata = $data;
-	    $data = array();
-            $data['rp_token'] = $orgdata->getRpToken();
+            $this->_logger->warn('[Flowmailer] data object class ' . get_class($data));
+	    $data = $data->getData();
+	    unset($data['password_hash']);
+
+//	} else if($data instanceof \Magento\Customer\Model\Data\CustomerSecure) {
+//            $orgdata = $data;
+//	    $data = array();
+//            $data['rp_token'] = $orgdata->getRpToken();
 
 	} else if(is_object($data)) {
-//            $this->_logger->warn('[Flowmailer] object class ' . get_class($data));
-
-	} else if(is_array($data)) {
+            $this->_logger->warn('[Flowmailer] object class ' . get_class($data));
+	}
+	
+	if(is_array($data)) {
             $newdata = array();
 	    if($depth > 8) {
 	    	return $newdata;
