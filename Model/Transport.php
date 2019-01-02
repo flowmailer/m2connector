@@ -86,6 +86,7 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 			$html = $html->getRawContent();
 		}
 
+                $from = '';
 		$from = $this->_message->getFrom();
 
 		$messages = array();
