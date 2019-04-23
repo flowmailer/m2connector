@@ -222,7 +222,7 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 			}
 		} else {
 			$this->_logger->debug('[Flowmailer] Module not enabled');
-			parent::send($this->_message);
+			parent::sendMessage($this->_message);
 		}
 	}
 
