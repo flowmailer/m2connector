@@ -1,72 +1,56 @@
 <?php
-namespace Flowmailer\M2Connector\Model;
 
-use \Psr\Log\LoggerInterface;
-use \Magento\Framework\Phrase;
-use \Magento\Framework\Mail\MessageInterface;
-use \Magento\Framework\Exception\MailException;
-use \Magento\Framework\Mail\TransportInterface;
-use \Magento\Framework\Module\Manager;
-use \Magento\Framework\App\Config\ScopeConfigInterface;
-use \Magento\Framework\Encryption\EncryptorInterface;
+namespace Flowmailer\M2Connector\Plugin;
+
+use Psr\Log\LoggerInterface;
+
+use Magento\Framework\Mail\TransportInterface;
+use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\App\Config\ScopeConfigInterface;
+use Magento\Framework\Module\Manager;
+
+use Flowmailer\M2Connector\Registry\MessageData;
+
 use Flowmailer\M2Connector\Helper\API\FlowmailerAPI;
 use Flowmailer\M2Connector\Helper\API\SubmitMessage;
 use Flowmailer\M2Connector\Helper\API\Attachment;
 
-class Transport extends \Magento\Framework\Mail\Transport implements TransportInterface {
-
+class TransportPlugin
+{
 	/**
-	* @var \Magento\Framework\Mail\MessageInterface
-	*/
-	protected $_message;
-
-	/**
-	* @var \Psr\Log\LoggerInterface
-	*/
+	 * @var Psr\Log\LoggerInterface
+	 */
 	protected $_logger;
 
 	/**
-	* @var \Magento\Framework\Module\Manager
-	*/
-	protected $_moduleManager;
-
-	/**
-	* @var \Magento\Framework\App\Config\ScopeConfigInterface
-	*/
+	 * @var Magento\Framework\App\Config\ScopeConfigInterface
+	 */
 	protected $_scopeConfig;
 
 	/**
-	* @var \Magento\Framework\Encryption\EncryptorInterface
-	*/
-	protected $_encryptor;
-
-	/**
-	*/
+	 */
 	protected $_enabled;
 
 	/**
-	* @param   MessageInterface  $message
-	* @param   LoggerInterface   $loggerInterface
-	* @throws  \InvalidArgumentException
-	*/
-	public function __construct(
-		MessageInterface     $message,
-		LoggerInterface      $loggerInterface,
-		Manager		     $moduleManager,
-		ScopeConfigInterface $scopeConfig,
-		EncryptorInterface   $encryptor,
-		$parameters = null
-	) {
-		parent::__construct($message, $parameters);
+	 */
+	protected $_messageData;
 
-		$this->_logger		= $loggerInterface;
-		$this->_message		= $message;
-		$this->_moduleManager   = $moduleManager;
-		$this->_scopeConfig     = $scopeConfig;
-		$this->_encryptor       = $encryptor;
+	public function __construct(
+		ScopeConfigInterface $scopeConfig,
+		Manager		     $moduleManager,
+		MessageData	     $messageData,
+		LoggerInterface      $loggerInterface,
+		EncryptorInterface   $encryptor
+	) {
+		$this->_scopeConfig = $scopeConfig;
+		$this->_messageData = $messageData;
+		$this->_logger      = $loggerInterface;
+		$this->_encryptor   = $encryptor;
+
+		$this->_logger->debug('[Flowmailer] messageData2 ' . spl_object_id($messageData));
 
 		$this->_enabled = $this->_scopeConfig->isSetFlag('fmconnector/api_credentials/enable', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-		$this->_enabled = $this->_enabled && $this->_moduleManager->isOutputEnabled('Flowmailer_M2Connector');
+		$this->_enabled = $this->_enabled && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
 	}
 
 	/**
@@ -74,10 +58,10 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 	*
 	* @return string
 	*/
-	private function _getSubmitMessages() {
+	private function _getSubmitMessages(TransportInterface $transport) {
 
-		$text	   = $this->_message->getBodyText(false);
-		$html	   = $this->_message->getBodyHtml(false);
+		$text	   = $transport->getMessage()->getBodyText(false);
+		$html	   = $transport->getMessage()->getBodyHtml(false);
 
 		if($text instanceof \Zend_Mime_Part) {
 			$text = $text->getRawContent();
@@ -86,13 +70,13 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 			$html = $html->getRawContent();
 		}
 
-		$from = $this->_message->getFrom();
+		$from = $transport->getMessage()->getFrom();
 		if(null === $from) {
 			$from = '';
 		}
 
 		$messages = array();
-		foreach($this->_message->getRecipients() as $recipient) {
+		foreach($transport->getMessage()->getRecipients() as $recipient) {
 			$message = new SubmitMessage();
 
 			$message->messageType = 'EMAIL';
@@ -102,16 +86,13 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 				$message->headerFromName = $from_name;
 			}
 			$message->recipientAddress = trim($recipient);
-			$message->subject = trim($this->_message->getSubject());
+			$message->subject = trim($transport->getMessage()->getSubject());
 			$message->html = $html;
 			$message->text = $text;
-
-			if($this->_message instanceof \Flowmailer\M2Connector\Model\Mail\Message) {
-				$message->data = $this->_message->getTemplateVars();
-			}
+			$message->data = $this->_messageData->getTemplateVars();
 
 			$attachments = array();
-			$parts = $this->_message->getParts();
+			$parts = $transport->getMessage()->getParts();
 			foreach($parts as $part) {
 				$attachment = new Attachment();
 				$attachment->content = base64_encode($part->getRawContent());
@@ -132,9 +113,9 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 	*
 	* @return string
 	*/
-	private function _getSubmitMessagesZend2() {
+	private function _getSubmitMessagesZend2(TransportInterface $transport) {
 
-		$raw = $this->_message->getRawMessage();
+		$raw = $transport->getMessage()->getRawMessage();
 		$rawb64 = base64_encode($raw);
 
 		$zendmessage = \Zend\Mail\Message::fromString($raw);
@@ -164,41 +145,22 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 			$message->senderAddress = $from;
 			$message->recipientAddress = trim($recipient);
 			$message->mimedata = $rawb64;
-
-			if($this->_message instanceof \Flowmailer\M2Connector\Model\Mail\Message) {
-				$message->data = $this->_message->getTemplateVars();
-			}
+			$message->data = $this->_messageData->getTemplateVars();
 
 			$messages[] = $message;
 		}
 		return $messages;
 	}
 
-	/**
-	* Sets the message
-	*
-	* @param   MessageInterface  $message
-	* @return  void
-	* @throws  \Magento\Framework\Exception\MailException
-	*/
-	public function setMessage(MessageInterface $message) {
-		$this->_message = $message;
-	}
-
-	/**
-	* Send a mail using this transport
-	*
-	* @return void
-	* @throws \Magento\Framework\Exception\MailException
-	*/
-	public function sendMessage() {
+	public function aroundSendMessage(TransportInterface $subject, \Closure $proceed)
+	{
 		if($this->_enabled) {
 			try {
 				$this->_logger->debug('[Flowmailer] Sending message');
-				if($this->_message instanceof \Zend_Mail) {
-					$messages = $this->_getSubmitMessages();
+				if($subject->getMessage() instanceof \Zend_Mail) {
+					$messages = $this->_getSubmitMessages($subject);
 				} else {
-					$messages = $this->_getSubmitMessagesZend2();
+					$messages = $this->_getSubmitMessagesZend2($subject);
 				}
 
 				$accountId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_account_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
@@ -222,17 +184,8 @@ class Transport extends \Magento\Framework\Mail\Transport implements TransportIn
 			}
 		} else {
 			$this->_logger->debug('[Flowmailer] Module not enabled');
-			parent::sendMessage($this->_message);
+			return $proceed();
 		}
-	}
-
-	/**
-	* Get message
-	*
-	* @return string
-	*/
-	public function getMessage() {
-		return $this->_message;
 	}
 }
 
