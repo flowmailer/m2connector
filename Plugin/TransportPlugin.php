@@ -8,6 +8,8 @@ use Magento\Framework\Mail\TransportInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Module\Manager;
+use Magento\Framework\Exception\MailException;
+use Magento\Framework\Phrase;
 
 use Flowmailer\M2Connector\Registry\MessageData;
 
