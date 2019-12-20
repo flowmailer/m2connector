@@ -173,6 +173,9 @@ class TransportPlugin
 
 				foreach($messages as $message) {
 					
+					if(isset($message->data['user']['password'])) {
+						$message->data['user']['password'] = null;
+					}
 					if(isset($message->data['user']['current_password'])) {
 						$message->data['user']['current_password'] = null;
 					}
