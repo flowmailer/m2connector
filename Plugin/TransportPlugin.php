@@ -172,6 +172,14 @@ class TransportPlugin
 				$api = new FlowmailerAPI($accountId, $apiId, $apiSecret);
 
 				foreach($messages as $message) {
+					
+					if(isset($message->data['user']['current_password'])) {
+						$message->data['user']['current_password'] = null;
+					}
+					if(isset($message->data['user']['password_confirmation'])) {
+						$message->data['user']['password_confirmation'] = null;
+					}
+				
 					$result = $api->submitMessage($message);
 
 					if($result['headers']['ResponseCode'] != 201) {
