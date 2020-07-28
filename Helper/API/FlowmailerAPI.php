@@ -18,6 +18,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 		private $authTime;
 
 		private $channel;
+		private $logger;
 
 		function __construct($accountId, $clientId, $clientSecret) {
 			$this->accountId = $accountId;
@@ -35,6 +36,18 @@ namespace Flowmailer\M2Connector\Helper\API;
 		
 		function __destruct() {
 			curl_multi_close($this->curlMulti);
+		}
+
+		public function setLogger($logger) {
+			$this->logger = $logger;
+		}
+
+		public function log($text) {
+			if($this->logger) {
+				$this->logger->debug($text);
+			} else {
+				echo($text . "\r\n");
+			}
 		}
 		
 		private function parseHeaders($header) {
@@ -105,7 +118,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 				return $return;
 			} else {
 				$authToken = null;
-				echo($response);
+				$this->log($response);
 				return false;
 			}
 		}
@@ -251,8 +264,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 			$return['response'] = $this->curlExecWithMulti($ch);
 			//$return['response'] = curl_exec($ch);
 			if($return['response'] === false) {
-				echo('cURL returned false' . "\n");
-				print_r(curl_getinfo($ch));
+				$this->log('cURL returned false: ' . print_r(curl_getinfo($ch), true));
 			}
 
 			$headerSize = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
@@ -305,8 +317,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 				$return['response'] = $output;
 
 				if($return['response'] === false) {
-					echo('cURL returned false' . "\n");
-					print_r(curl_getinfo($ch));
+					$this->log('cURL returned false: ' . print_r(curl_getinfo($ch), true));
 				}
 
 				$parts = explode("\r\n\r\n", $return['response'], 2);
@@ -340,7 +351,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 					continue;
 				}
 				
-				print_r($return);
+				$this->log('retrying: ' . print_r($return, true));
 				sleep(1);
 			} while(!$success && $attempts < $this->maxAttempts);
 
@@ -380,7 +391,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 						$allreturns[$index] = $return;
 
 					} else {
-						print_r($return);
+						$this->log('return: ' . print_r($return, true));
 
 						$allreturns[$index] = $return;
 
@@ -398,7 +409,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 					return $allreturns;
 				}
 
-				print("retrying: " . count($postDataArray) . "\r\n");
+				$this->log("retrying: " . count($postDataArray));
 
 				if($refreshToken) {
 					$this->refreshToken();
@@ -476,7 +487,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 			
 			$result = array();
 			while(!$done) {
-				echo($offset . ' ');
+				$this->log($offset . ' ');
 				$newResult = $this->listCall($uri, $offset, $batchSize);
 				
 				if(!is_array($newResult['data']) || count($newResult['data']) < $batchSize) {

@@ -170,6 +170,7 @@ class TransportPlugin
 				$apiSecret = $this->_encryptor->decrypt($this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
 
 				$api = new FlowmailerAPI($accountId, $apiId, $apiSecret);
+				$api->setLogger($this->_logger);
 
 				foreach($messages as $message) {
 					
