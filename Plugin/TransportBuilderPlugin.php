@@ -59,6 +59,9 @@ class TransportBuilderPlugin
 	private function toData($data, $depth=0) {
 		if($data instanceof \Magento\Framework\Model\AbstractExtensibleModel) {
 			$orgdata = $data;
+			if($orgdata instanceof \Magento\Sales\Model\Order) {
+				$orgdata->getItems();
+			}
 			if($orgdata instanceof \Magento\Sales\Model\Order\Item) {
 				// zodat de product array met image urls mee komt
 				$orgdata->getProduct();
