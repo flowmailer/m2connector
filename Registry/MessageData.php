@@ -83,7 +83,7 @@ class MessageData
      *
      * @return $this
      */
-    protected function reset()
+    public function reset()
     {
         $this->templateIdentifier = null;
         $this->templateVars = null;
