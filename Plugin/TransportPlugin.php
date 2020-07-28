@@ -13,7 +13,7 @@ use Magento\Framework\Phrase;
 
 use Flowmailer\M2Connector\Registry\MessageData;
 
-use Flowmailer\M2Connector\Helper\API\FlowmailerAPI;
+use Flowmailer\M2Connector\Helper\API\FlowmailerAPIFactory;
 use Flowmailer\M2Connector\Helper\API\SubmitMessage;
 use Flowmailer\M2Connector\Helper\API\Attachment;
 
@@ -42,12 +42,14 @@ class TransportPlugin
 		Manager		     $moduleManager,
 		MessageData	     $messageData,
 		LoggerInterface      $loggerInterface,
-		EncryptorInterface   $encryptor
+		EncryptorInterface   $encryptor,
+		FlowmailerApiFactory $flowmailerApiFactory
 	) {
-		$this->_scopeConfig = $scopeConfig;
-		$this->_messageData = $messageData;
-		$this->_logger      = $loggerInterface;
-		$this->_encryptor   = $encryptor;
+		$this->_scopeConfig          = $scopeConfig;
+		$this->_messageData          = $messageData;
+		$this->_logger               = $loggerInterface;
+		$this->_encryptor            = $encryptor;
+		$this->_flowmailerApiFactory = $flowmailerApiFactory;
 
 		$this->_logger->debug('[Flowmailer] messageData2 ' . spl_object_id($messageData));
 
@@ -169,8 +171,7 @@ class TransportPlugin
 				$apiId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
 				$apiSecret = $this->_encryptor->decrypt($this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
 
-				$api = new FlowmailerAPI($accountId, $apiId, $apiSecret);
-				$api->setLogger($this->_logger);
+				$api = $this->_flowmailerApiFactory->create($accountId, $apiId, $apiSecret);
 
 				foreach($messages as $message) {
 					
