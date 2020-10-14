@@ -26,7 +26,6 @@ namespace Flowmailer\M2Connector\Helper\API;
 			$this->clientSecret = $clientSecret;
 			
 			$mh = curl_multi_init();
-			curl_multi_setopt($mh, CURLMOPT_PIPELINING, 3);
 			curl_multi_setopt($mh, CURLMOPT_MAXCONNECTS, 10);
 #			curl_multi_setopt($mh, CURLMOPT_MAX_TOTAL_CONNECTIONS, 10);
 			$this->curlMulti = $mh;
