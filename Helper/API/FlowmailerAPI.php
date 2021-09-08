@@ -3,7 +3,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 	
 	class FlowmailerAPI {
 		private $authURL = 'https://login.flowmailer.net/oauth/token';
-		private $baseURL = 'http://api.flowmailer.net';
+		private $baseURL = 'https://api.flowmailer.net';
 
 //		private $authURL = 'https://login.flowmailer.local/oauth/token';
 //		private $baseURL = 'http://api.flowmailer.local';
