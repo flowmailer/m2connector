@@ -2,7 +2,7 @@
   "name": "flowmailer/m2connector",
   "description": "Flowmailer M2Connector",
   "type": "magento2-module",
-  "version": "1.0.13",
+  "version": "1.0.15",
   "license": [
     "MIT"
   ],
