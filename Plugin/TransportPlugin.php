@@ -194,7 +194,7 @@ class TransportPlugin
 					$this->_logger->debug('[Flowmailer] Sending message done ' . var_export($result, true));
 				}
 			} catch (\Exception $e) {
-				$this->_logger->warn('[Flowmailer] Error sending message : ' . $e->getMessage());
+				$this->_logger->warning('[Flowmailer] Error sending message : ' . $e->getMessage());
 				throw new MailException(new Phrase($e->getMessage()), $e);
 			}
 		} else {
