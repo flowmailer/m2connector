@@ -1,25 +1,30 @@
 <?php
 
+/*
+ * This file is part of the Flowmailer Magento 2 Connector package.
+ * Copyright (c) 2018 Flowmailer BV
+ */
+
 namespace Flowmailer\M2Connector\Registry;
 
 class MessageData
 {
     /**
-     * Template Identifier
+     * Template Identifier.
      *
      * @var string
      */
     protected $templateIdentifier;
 
     /**
-     * Template Variables
+     * Template Variables.
      *
      * @var array
      */
     protected $templateVars;
 
     /**
-     * Template Options
+     * Template Options.
      *
      * @var array
      */
@@ -30,7 +35,7 @@ class MessageData
     }
 
     /**
-     * Set template identifier
+     * Set template identifier.
      *
      * @param string $templateIdentifier
      *
@@ -44,7 +49,7 @@ class MessageData
     }
 
     /**
-     * Set template vars
+     * Set template vars.
      *
      * @param array $templateVars
      *
@@ -58,9 +63,10 @@ class MessageData
     }
 
     /**
-     * Set template options
+     * Set template options.
      *
      * @param array $templateOptions
+     *
      * @return $this
      */
     public function setTemplateOptions($templateOptions)
@@ -72,23 +78,24 @@ class MessageData
 
     public function getTemplateVars()
     {
-        $data = $this->templateVars;
+        $data                       = $this->templateVars;
         $data['templateIdentifier'] = $this->templateIdentifier;
-	$data['templateOptions'] = $this->templateOptions;
+        $data['templateOptions']    = $this->templateOptions;
+
         return $data;
     }
 
     /**
-     * Reset object state
+     * Reset object state.
      *
      * @return $this
      */
     public function reset()
     {
         $this->templateIdentifier = null;
-        $this->templateVars = null;
-        $this->templateOptions = null;
+        $this->templateVars       = null;
+        $this->templateOptions    = null;
+
         return $this;
     }
 }
-
