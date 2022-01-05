@@ -1,0 +1,11 @@
+parameters:
+    level: 1
+    paths:
+        - Helper
+        - Plugin
+        - Registry
+        - registration.php
+    bootstrapFiles:
+        - ../../magento/vendor/autoload.php
+    scanDirectories:
+        - ../../magento/

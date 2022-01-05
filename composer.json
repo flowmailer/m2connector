@@ -5,8 +5,10 @@
     "MIT"
   ],
   "type": "magento2-module",
+  "require": {
+    "php": "^7.3 || ^7.4"
+  },
   "require-dev": {
-    "php": "^7.4",
     "ergebnis/composer-normalize": "^2.23",
     "friendsofphp/php-cs-fixer": "^3.4",
     "icanhazstring/composer-unused": "^0.7.12",
@@ -25,7 +27,7 @@
   },
   "autoload-dev": {
     "classmap": [
-      "../../magento"
+      "../../magento/"
     ]
   },
   "config": {
@@ -37,16 +39,13 @@
     }
   },
   "extra": {
-    "unused": [
-      "ext-ctype",
-      "ext-iconv"
-    ]
+    "unused": []
   },
   "scripts": {
     "analyse": [
       "composer validate --no-check-lock",
       "composer-unused --no-ansi",
-      "phpstan analyse --level=1 Helper/ Plugin/ Registry/ registration.php"
+      "phpstan analyse"
     ],
     "fix": [
       "php-cs-fixer fix --allow-risky=yes --config .php-cs-fixer.dist.php",

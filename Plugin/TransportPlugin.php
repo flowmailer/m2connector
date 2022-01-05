@@ -22,18 +22,34 @@ use Psr\Log\LoggerInterface;
 class TransportPlugin
 {
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $_logger;
 
     /**
-     * @var Magento\Framework\App\Config\ScopeConfigInterface
+     * @var ScopeConfigInterface
      */
     protected $_scopeConfig;
 
+    /**
+     * @var bool
+     */
     protected $_enabled;
 
+    /**
+     * @var MessageData
+     */
     protected $_messageData;
+
+    /**
+     * @var EncryptorInterface
+     */
+    private $_encryptor;
+
+    /**
+     * @var FlowmailerAPIFactory
+     */
+    private $_flowmailerApiFactory;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,

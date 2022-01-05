@@ -26,6 +26,10 @@ namespace Flowmailer\M2Connector\Helper\API;
 
         private $channel;
         private $logger;
+        private $accountId;
+        private $clientId;
+        private $clientSecret;
+        private $curlMulti;
 
         public function __construct($accountId, $clientId, $clientSecret)
         {
@@ -188,7 +192,7 @@ namespace Flowmailer\M2Connector\Helper\API;
 
         private function curlExecArrayWithMulti($handles)
         {
-//			foreach($handles as $handle) {
+            //			foreach($handles as $handle) {
             //				curl_multi_add_handle($this->curlMulti, $handle);
             //			}
 
@@ -297,6 +301,8 @@ namespace Flowmailer\M2Connector\Helper\API;
         private function tryMultiCall($uri, $expectedCodes, $extraHeaders = null, $method = 'GET', $postDataArray = null)
         {
             $channels = [];
+
+            $ch = false;
             foreach ($postDataArray as $postData) {
                 $ch = curl_init();
                 curl_setopt($ch, CURLOPT_URL, $this->baseURL.'/'.$this->accountId.'/'.$uri);
@@ -334,7 +340,7 @@ namespace Flowmailer\M2Connector\Helper\API;
                 $return             = [];
                 $return['response'] = $output;
 
-                if ($return['response'] === false) {
+                if ($return['response'] === false && $ch !== false) {
                     $this->log('cURL returned false: '.print_r(curl_getinfo($ch), true));
                 }
 
@@ -467,7 +473,7 @@ namespace Flowmailer\M2Connector\Helper\API;
             return $this->multiCall('/messages/submit', [201, 400], null, 'POST', $messages);
         }
 
-        public function undeliveredMessages(DateTime $receivedFrom, DateTime $receivedTo, $addEvents = false, $addHeaders = false, $addOnlineLink = false)
+        public function undeliveredMessages(\DateTime $receivedFrom, \DateTime $receivedTo, $addEvents = false, $addHeaders = false, $addOnlineLink = false)
         {
             $uri  = '/undeliveredmessages';
 
@@ -497,7 +503,7 @@ namespace Flowmailer\M2Connector\Helper\API;
             return $result;
         }
 
-        public function messages(DateTime $submittedFrom, DateTime $submittedTo, $addEvents = false, $addHeaders = false, $addOnlineLink = false)
+        public function messages(\DateTime $submittedFrom, \DateTime $submittedTo, $addEvents = false, $addHeaders = false, $addOnlineLink = false)
         {
             $uri  = '/messages';
             $uri .= ';daterange='.$submittedFrom->format(DATE_ISO8601).','.$submittedTo->format(DATE_ISO8601);
@@ -527,7 +533,7 @@ namespace Flowmailer\M2Connector\Helper\API;
             return $result;
         }
 
-        public function messageEvents(DateTime $receivedFrom, DateTime $receivedTo)
+        public function messageEvents(\DateTime $receivedFrom, \DateTime $receivedTo)
         {
             $uri  = '/message_events';
             $uri .= ';receivedrange='.$receivedFrom->format(DATE_ISO8601).','.$receivedTo->format(DATE_ISO8601);
