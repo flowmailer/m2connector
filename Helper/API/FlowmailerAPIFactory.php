@@ -7,21 +7,24 @@
 
 namespace Flowmailer\M2Connector\Helper\API;
 
+use Magento\Framework\ObjectManagerInterface;
+use Psr\Log\LoggerInterface;
+
 class FlowmailerAPIFactory
 {
     /**
-     * @var \Magento\Framework\ObjectManagerInterface
+     * @var ObjectManagerInterface
      */
     protected $_objectManager;
 
     /**
-     * @var \Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $_logger;
 
     public function __construct(
-        \Magento\Framework\ObjectManagerInterface $objectManager,
-        \Psr\Log\LoggerInterface $loggerInterface
+        ObjectManagerInterface $objectManager,
+        LoggerInterface $loggerInterface
     ) {
         $this->_objectManager = $objectManager;
         $this->_logger        = $loggerInterface;
@@ -29,7 +32,15 @@ class FlowmailerAPIFactory
 
     public function create($accountId, $apiId, $apiSecret)
     {
-        $api = $this->_objectManager->create(FlowmailerAPI::class, ['accountId' => $accountId, 'clientId' => $apiId, 'clientSecret' => $apiSecret]);
+        $api = $this->_objectManager->create(
+            FlowmailerAPI::class,
+            [
+                'accountId'    => $accountId,
+                'clientId'     => $apiId,
+                'clientSecret' => $apiSecret,
+            ]
+        );
+
         $api->setLogger($this->_logger);
 
         return $api;

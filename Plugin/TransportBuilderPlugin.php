@@ -9,18 +9,31 @@ namespace Flowmailer\M2Connector\Plugin;
 
 use Flowmailer\M2Connector\Registry\MessageData;
 use Magento\Catalog\Helper\Image;
+use Magento\Framework\DataObject;
 use Magento\Framework\Mail\Template\TransportBuilder;
+use Magento\Framework\Model\AbstractExtensibleModel;
+use Magento\Framework\UrlInterface;
+use Magento\Sales\Model\Order;
+use Magento\Sales\Model\Order\Item;
+use Magento\Sales\Model\Order\Shipment;
+use Magento\Store\Model\Store;
 use Psr\Log\LoggerInterface;
 
 class TransportBuilderPlugin
 {
+    /**
+     * @var MessageData
+     */
     private $_messageData;
 
     /**
-     * @var Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $_logger;
 
+    /**
+     * @var Image
+     */
     protected $_imageHelper;
 
     public function __construct(
@@ -65,57 +78,48 @@ class TransportBuilderPlugin
 
     private function toData($data, $depth = 0)
     {
-        if ($data instanceof \Magento\Framework\Model\AbstractExtensibleModel) {
+        if ($data instanceof AbstractExtensibleModel) {
             $orgdata = $data;
-            if ($orgdata instanceof \Magento\Sales\Model\Order) {
+
+            if ($orgdata instanceof Order) {
                 $orgdata->getItems();
             }
-            if ($orgdata instanceof \Magento\Sales\Model\Order\Item) {
-                // zodat de product array met image urls mee komt
+
+            if ($orgdata instanceof Item) {
+                // Be sure to load the product array with image urls.
                 $orgdata->getProduct();
             }
-            if ($orgdata instanceof \Magento\Sales\Model\Order\Shipment) {
+
+            if ($orgdata instanceof Shipment) {
                 $orgdata->getTracks();
                 $orgdata->getComments();
             }
-            $this->_logger->debug('[Flowmailer] extensible object class '.get_class($data));
+
+            $this->_logger->debug(sprintf('[Flowmailer] extensible object class %s', get_class($data)));
+
             $data = $data->getData();
-            //			if($orgdata instanceof \Magento\Sales\Model\Order\Item) {
-            //				$data['small_image'] = $this->_imageHelper->init($orgdata->getProduct(), 'small_image', ['type'=>'small_image'])->keepAspectRatio(true)->resize('65','65')->getUrl();
-            //				$data['image_2'] = $orgdata->getProduct()->getSmallImage();
-            //				$data['small_image_2'] = $orgdata->getProduct()->getImage();
-            //			}
-            if ($orgdata instanceof \Magento\Store\Model\Store) {
+            if ($orgdata instanceof Store) {
                 $data['base_url']               = $orgdata->getBaseUrl();
-                $data['product_image_base_url'] = $orgdata->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA).'catalog/product';
+                $data['product_image_base_url'] = $orgdata->getBaseUrl(UrlInterface::URL_TYPE_MEDIA).'catalog/product';
             }
-            if ($orgdata instanceof \Magento\Customer\Model\Customer) {
-                $data['rp_token'] = $orgdata->getRpToken();
-            }
-        } elseif ($data instanceof \Magento\Framework\DataObject) {
-            $orgdata = $data;
-            $this->_logger->debug('[Flowmailer] data object class '.get_class($data));
+        } elseif ($data instanceof DataObject) {
+            $this->_logger->debug(sprintf('[Flowmailer] data object class %s', get_class($data)));
             $data = $data->getData();
             unset($data['password_hash']);
-
-        //		} else if($data instanceof \Magento\Customer\Model\Data\CustomerSecure) {
-//			$orgdata = $data;
-//			$data = array();
-//			$data['rp_token'] = $orgdata->getRpToken();
         } elseif (is_object($data)) {
-            $this->_logger->debug('[Flowmailer] object class '.get_class($data));
+            $this->_logger->debug(sprintf('[Flowmailer] object class %s', get_class($data)));
         }
 
         if (is_array($data)) {
-            $newdata = [];
+            $newData = [];
             if ($depth > 8) {
-                return $newdata;
+                return $newData;
             }
             foreach ($data as $key => $value) {
-                $newdata[$key] = $this->toData($value, $depth + 1);
+                $newData[$key] = $this->toData($value, $depth + 1);
             }
 
-            return $newdata;
+            return $newData;
         }
 
         return $data;

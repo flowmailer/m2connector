@@ -17,7 +17,9 @@ use Magento\Framework\Exception\MailException;
 use Magento\Framework\Mail\TransportInterface;
 use Magento\Framework\Module\Manager;
 use Magento\Framework\Phrase;
+use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
+use Zend\Mail\Message;
 
 class TransportPlugin
 {
@@ -72,14 +74,14 @@ class TransportPlugin
     }
 
     /**
-     * Returns a string with the JSON request for the API from the current message.
+     * Returns an array with SubmitMessage objects for the API from the current message.
      *
-     * @return string
+     * @return array<int, SubmitMessage>
      */
-    private function _getSubmitMessages(TransportInterface $transport)
+    private function _getSubmitMessages(TransportInterface $transport): array
     {
-        $text	   = $transport->getMessage()->getBodyText(false);
-        $html	   = $transport->getMessage()->getBodyHtml(false);
+        $text = $transport->getMessage()->getBodyText(false);
+        $html = $transport->getMessage()->getBodyHtml(false);
 
         if ($text instanceof \Zend_Mime_Part) {
             $text = $text->getRawContent();
@@ -128,16 +130,15 @@ class TransportPlugin
     }
 
     /**
-     * Returns a string with the JSON request for the API from the current message.
+     * Returns an array with SubmitMessage objects for the API from the current message.
      *
-     * @return string
+     * @return array<int, SubmitMessage>
      */
-    private function _getSubmitMessagesZend2(TransportInterface $transport)
+    private function _getSubmitMessagesZend2(TransportInterface $transport): array
     {
-        $raw    = $transport->getMessage()->getRawMessage();
-        $rawb64 = base64_encode($raw);
-
-        $zendmessage = \Zend\Mail\Message::fromString($raw);
+        $raw         = $transport->getMessage()->getRawMessage();
+        $rawb64      = base64_encode($raw);
+        $zendmessage = Message::fromString($raw);
 
         if ($zendmessage->getFrom()->count() > 0) {
             $from = $zendmessage->getFrom()->current()->getEmail();
@@ -183,9 +184,9 @@ class TransportPlugin
                     $messages = $this->_getSubmitMessagesZend2($subject);
                 }
 
-                $accountId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_account_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-                $apiId     = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_id', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-                $apiSecret = $this->_encryptor->decrypt($this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', \Magento\Store\Model\ScopeInterface::SCOPE_STORE));
+                $accountId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_account_id', ScopeInterface::SCOPE_STORE);
+                $apiId     = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_id', ScopeInterface::SCOPE_STORE);
+                $apiSecret = $this->_encryptor->decrypt($this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', ScopeInterface::SCOPE_STORE));
 
                 $api = $this->_flowmailerApiFactory->create($accountId, $apiId, $apiSecret);
 
@@ -208,9 +209,10 @@ class TransportPlugin
 
                     $this->_logger->debug('[Flowmailer] Sending message done '.var_export($result, true));
                 }
-            } catch (\Exception $e) {
-                $this->_logger->warning('[Flowmailer] Error sending message : '.$e->getMessage());
-                throw new MailException(new Phrase($e->getMessage()), $e);
+            } catch (\Exception $exception) {
+                $this->_logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
+
+                throw new MailException(new Phrase($exception->getMessage()), $exception);
             }
         } else {
             $this->_logger->debug('[Flowmailer] Module not enabled');

@@ -5,8 +5,10 @@
  * Copyright (c) 2018 Flowmailer BV
  */
 
-  \Magento\Framework\Component\ComponentRegistrar::register(
-    \Magento\Framework\Component\ComponentRegistrar::MODULE,
+use Magento\Framework\Component\ComponentRegistrar;
+
+ComponentRegistrar::register(
+    ComponentRegistrar::MODULE,
     'Flowmailer_M2Connector',
     __DIR__
 );

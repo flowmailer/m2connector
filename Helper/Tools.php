@@ -12,7 +12,7 @@ use Psr\Log\LoggerInterface;
 class Tools
 {
     /**
-     * @var \Psr\Log\LoggerInterface
+     * @var LoggerInterface
      */
     protected $_logger;
 
@@ -34,6 +34,7 @@ class Tools
     public function isEmailValid($email)
     {
         $validator = new \Zend_Validate_EmailAddress();
+
         if (!$validator->isValid($email)) {
             return false;
         }
