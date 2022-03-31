@@ -30,10 +30,6 @@ class MessageData
      */
     protected $templateOptions = null;
 
-    public function __construct()
-    {
-    }
-
     public function setTemplateIdentifier($templateIdentifier): self
     {
         $this->templateIdentifier = $templateIdentifier;

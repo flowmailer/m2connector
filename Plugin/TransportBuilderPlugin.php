@@ -24,54 +24,47 @@ class TransportBuilderPlugin
     /**
      * @var MessageData
      */
-    private $_messageData;
+    private $messageData;
 
     /**
      * @var LoggerInterface
      */
-    protected $_logger;
-
-    /**
-     * @var Image
-     */
-    protected $_imageHelper;
+    private $logger;
 
     public function __construct(
         MessageData $messageData,
-        LoggerInterface $loggerInterface,
-        Image $imageHelper
+        LoggerInterface $logger
     ) {
-        $this->_messageData = $messageData;
-        $this->_logger      = $loggerInterface;
-        $this->_imageHelper = $imageHelper;
+        $this->messageData = $messageData;
+        $this->logger      = $logger;
 
-        $this->_logger->debug('[Flowmailer] messageData1 '.spl_object_id($messageData));
+        $this->logger->debug('[Flowmailer] messageData1 '.spl_object_id($messageData));
     }
 
     public function beforeSetTemplateOptions(TransportBuilder $transportBuilder, $templateOptions)
     {
-        $this->_messageData->setTemplateOptions($templateOptions);
+        $this->messageData->setTemplateOptions($templateOptions);
 
         return null;
     }
 
     public function beforeSetTemplateIdentifier(TransportBuilder $transportBuilder, $templateIdentifier)
     {
-        $this->_messageData->setTemplateIdentifier($templateIdentifier);
+        $this->messageData->setTemplateIdentifier($templateIdentifier);
 
         return null;
     }
 
     public function beforeSetTemplateVars(TransportBuilder $transportBuilder, $templateVars)
     {
-        $this->_messageData->setTemplateVars($this->toData($templateVars));
+        $this->messageData->setTemplateVars($this->toData($templateVars));
 
         return null;
     }
 
     public function beforeReset(TransportBuilder $transportBuilder)
     {
-        $this->_messageData->reset();
+        $this->messageData->reset();
 
         return null;
     }
@@ -95,7 +88,7 @@ class TransportBuilderPlugin
                 $orgdata->getComments();
             }
 
-            $this->_logger->debug(sprintf('[Flowmailer] extensible object class %s', get_class($data)));
+            $this->logger->debug(sprintf('[Flowmailer] extensible object class %s', get_class($data)));
 
             $data = $data->getData();
             if ($orgdata instanceof Store) {
@@ -103,11 +96,11 @@ class TransportBuilderPlugin
                 $data['product_image_base_url'] = $orgdata->getBaseUrl(UrlInterface::URL_TYPE_MEDIA).'catalog/product';
             }
         } elseif ($data instanceof DataObject) {
-            $this->_logger->debug(sprintf('[Flowmailer] data object class %s', get_class($data)));
+            $this->logger->debug(sprintf('[Flowmailer] data object class %s', get_class($data)));
             $data = $data->getData();
             unset($data['password_hash']);
         } elseif (is_object($data)) {
-            $this->_logger->debug(sprintf('[Flowmailer] object class %s', get_class($data)));
+            $this->logger->debug(sprintf('[Flowmailer] object class %s', get_class($data)));
         }
 
         if (is_array($data)) {
