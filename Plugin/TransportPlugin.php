@@ -87,7 +87,9 @@ class TransportPlugin
                 ->setHeaderFromName($fromName)
                 ->setRecipientAddress(trim($recipient))
                 ->setMimedata($rawb64)
-                ->setData((object) $this->messageData->getTemplateVars())
+                ->setData(
+                    json_decode(json_encode($this->messageData->getTemplateVars()))
+                )
             ;
         }
     }
@@ -96,7 +98,7 @@ class TransportPlugin
     {
         $data = $message->getData();
 
-        if (is_object($data) && property_exists($data, 'user') && is_object($data->user)) {
+        if (is_object($data) && property_exists($data, 'user')) {
             if (property_exists($data->user, 'password')) {
                 $data->user->password = null;
             }
