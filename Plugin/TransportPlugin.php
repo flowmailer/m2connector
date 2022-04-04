@@ -64,27 +64,6 @@ class TransportPlugin
         $this->enabled = $this->scopeConfig->isSetFlag('fmconnector/api_credentials/enable', ScopeInterface::SCOPE_STORE) && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
     }
 
-    public function aroundSendMessage(TransportInterface $subject, \Closure $proceed)
-    {
-        if ($this->enabled === false) {
-            $this->logger->debug('[Flowmailer] Module not enabled');
-
-            return $proceed();
-        }
-
-        try {
-            $this->logger->debug('[Flowmailer] Sending message');
-
-            $this->submitMessages(
-                $this->getSubmitMessages($subject)
-            );
-        } catch (\Exception $exception) {
-            $this->logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
-
-            throw new MailException(new Phrase($exception->getMessage()), $exception);
-        }
-    }
-
     private function getSubmitMessages(TransportInterface $transport): \Generator
     {
         $raw             = $transport->getMessage()->getRawMessage();
@@ -168,5 +147,26 @@ class TransportPlugin
         }
 
         return $recipients;
+    }
+
+    public function aroundSendMessage(TransportInterface $subject, \Closure $proceed)
+    {
+        if ($this->enabled === false) {
+            $this->logger->debug('[Flowmailer] Module not enabled');
+
+            return $proceed();
+        }
+
+        try {
+            $this->logger->debug('[Flowmailer] Sending message');
+
+            $this->submitMessages(
+                $this->getSubmitMessages($subject)
+            );
+        } catch (\Exception $exception) {
+            $this->logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
+
+            throw new MailException(new Phrase($exception->getMessage()), $exception);
+        }
     }
 }
