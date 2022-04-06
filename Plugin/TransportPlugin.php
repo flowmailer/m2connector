@@ -7,10 +7,10 @@
 
 namespace Flowmailer\M2Connector\Plugin;
 
-use Flowmailer\M2Connector\Helper\API\Attachment;
-use Flowmailer\M2Connector\Helper\API\FlowmailerAPIFactory;
-use Flowmailer\M2Connector\Helper\API\SubmitMessage;
+use Flowmailer\API\Flowmailer;
+use Flowmailer\API\Model\SubmitMessage;
 use Flowmailer\M2Connector\Registry\MessageData;
+use Laminas\Mail\Message;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\MailException;
@@ -19,205 +19,156 @@ use Magento\Framework\Module\Manager;
 use Magento\Framework\Phrase;
 use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
-use Zend\Mail\Message;
 
 class TransportPlugin
 {
     /**
      * @var LoggerInterface
      */
-    protected $_logger;
+    protected $logger;
 
     /**
      * @var ScopeConfigInterface
      */
-    protected $_scopeConfig;
+    protected $scopeConfig;
 
     /**
      * @var bool
      */
-    protected $_enabled;
+    protected $enabled;
 
     /**
      * @var MessageData
      */
-    protected $_messageData;
+    protected $messageData;
 
     /**
      * @var EncryptorInterface
      */
-    private $_encryptor;
-
-    /**
-     * @var FlowmailerAPIFactory
-     */
-    private $_flowmailerApiFactory;
+    private $encryptor;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,
         Manager $moduleManager,
         MessageData $messageData,
-        LoggerInterface $loggerInterface,
-        EncryptorInterface $encryptor,
-        FlowmailerApiFactory $flowmailerApiFactory
+        LoggerInterface $logger,
+        EncryptorInterface $encryptor
     ) {
-        $this->_scopeConfig          = $scopeConfig;
-        $this->_messageData          = $messageData;
-        $this->_logger               = $loggerInterface;
-        $this->_encryptor            = $encryptor;
-        $this->_flowmailerApiFactory = $flowmailerApiFactory;
+        $this->scopeConfig = $scopeConfig;
+        $this->messageData = $messageData;
+        $this->logger      = $logger;
+        $this->encryptor   = $encryptor;
 
-        $this->_logger->debug('[Flowmailer] messageData2 '.spl_object_id($messageData));
+        $this->logger->debug(sprintf('[Flowmailer] messageData2 %s', spl_object_id($messageData)));
 
-        $this->_enabled = $this->_scopeConfig->isSetFlag('fmconnector/api_credentials/enable', \Magento\Store\Model\ScopeInterface::SCOPE_STORE);
-        $this->_enabled = $this->_enabled && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
+        $this->enabled = $this->scopeConfig->isSetFlag('fmconnector/api_credentials/enable', ScopeInterface::SCOPE_STORE) && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
     }
 
-    /**
-     * Returns an array with SubmitMessage objects for the API from the current message.
-     *
-     * @return array<int, SubmitMessage>
-     */
-    private function _getSubmitMessages(TransportInterface $transport): array
+    private function getSubmitMessages(TransportInterface $transport): \Generator
     {
-        $text = $transport->getMessage()->getBodyText(false);
-        $html = $transport->getMessage()->getBodyHtml(false);
+        $raw             = $transport->getMessage()->getRawMessage();
+        $rawb64          = base64_encode($raw);
+        $originalMessage = Message::fromString($raw);
 
-        if ($text instanceof \Zend_Mime_Part) {
-            $text = $text->getRawContent();
-        }
-        if ($html instanceof \Zend_Mime_Part) {
-            $html = $html->getRawContent();
-        }
-
-        $from = $transport->getMessage()->getFrom();
-        if (null === $from) {
-            $from = '';
+        $from     = '';
+        $fromName = '';
+        if ($originalMessage->getFrom()->count() > 0) {
+            $from     = $originalMessage->getFrom()->current()->getEmail();
+            $fromName = $originalMessage->getFrom()->current()->getName();
         }
 
-        $messages = [];
-        foreach ($transport->getMessage()->getRecipients() as $recipient) {
-            $message = new SubmitMessage();
+        $recipients = $this->getRecipients($originalMessage);
 
-            $message->messageType       = 'EMAIL';
-            $message->senderAddress     = $from;
-            $message->headerFromAddress = $from;
-            if (!empty($from_name)) {
-                $message->headerFromName = $from_name;
-            }
-            $message->recipientAddress = trim($recipient);
-            $message->subject          = trim($transport->getMessage()->getSubject());
-            $message->html             = $html;
-            $message->text             = $text;
-            $message->data             = $this->_messageData->getTemplateVars();
-
-            $attachments = [];
-            $parts       = $transport->getMessage()->getParts();
-            foreach ($parts as $part) {
-                $attachment              = new Attachment();
-                $attachment->content     = base64_encode($part->getRawContent());
-                $attachment->contentType = $part->type;
-                $attachment->filename    = $part->filename;
-
-                $attachments[] = $attachment;
-            }
-            $message->attachments = $attachments;
-
-            $messages[] = $message;
-        }
-
-        return $messages;
-    }
-
-    /**
-     * Returns an array with SubmitMessage objects for the API from the current message.
-     *
-     * @return array<int, SubmitMessage>
-     */
-    private function _getSubmitMessagesZend2(TransportInterface $transport): array
-    {
-        $raw         = $transport->getMessage()->getRawMessage();
-        $rawb64      = base64_encode($raw);
-        $zendmessage = Message::fromString($raw);
-
-        if ($zendmessage->getFrom()->count() > 0) {
-            $from = $zendmessage->getFrom()->current()->getEmail();
-        } else {
-            $from = '';
-        }
-
-        $recipients = [];
-        foreach ($zendmessage->getTo() as $recipient) {
-            $recipients[] = $recipient->getEmail();
-        }
-        foreach ($zendmessage->getCc() as $recipient) {
-            $recipients[] = $recipient->getEmail();
-        }
-        foreach ($zendmessage->getBcc() as $recipient) {
-            $recipients[] = $recipient->getEmail();
-        }
-
-        $messages = [];
         foreach ($recipients as $recipient) {
-            $message = new SubmitMessage();
+            yield (new SubmitMessage())
+                ->setMessageType('EMAIL')
+                ->setSenderAddress($from)
+                ->setHeaderFromAddress($from)
+                ->setHeaderFromName($fromName)
+                ->setRecipientAddress(trim($recipient))
+                ->setMimedata($rawb64)
+                ->setData(
+                    json_decode(json_encode($this->messageData->getTemplateVars()))
+                )
+            ;
+        }
+    }
 
-            $message->messageType      = 'EMAIL';
-            $message->senderAddress    = $from;
-            $message->recipientAddress = trim($recipient);
-            $message->mimedata         = $rawb64;
-            $message->data             = $this->_messageData->getTemplateVars();
+    private function clearSensitiveData(SubmitMessage $message): void
+    {
+        $data = $message->getData();
 
-            $messages[] = $message;
+        if (is_object($data) && property_exists($data, 'user')) {
+            if (property_exists($data->user, 'password')) {
+                $data->user->password = null;
+            }
+            if (property_exists($data->user, 'current_password')) {
+                $data->user->current_password = null;
+            }
+            if (property_exists($data->user, 'password_confirmation')) {
+                $data->user->password_confirmation = null;
+            }
         }
 
-        return $messages;
+        $message->setData($data);
+    }
+
+    private function createApiClient(): Flowmailer
+    {
+        return Flowmailer::init(
+            $this->scopeConfig->getValue('fmconnector/api_credentials/api_account_id', ScopeInterface::SCOPE_STORE),
+            $this->scopeConfig->getValue('fmconnector/api_credentials/api_client_id', ScopeInterface::SCOPE_STORE),
+            $this->encryptor->decrypt($this->scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', ScopeInterface::SCOPE_STORE))
+        )->setLogger($this->logger);
+    }
+
+    private function submitMessages(\Generator $messages): void
+    {
+        $api = $this->createApiClient();
+
+        foreach ($messages as $message) {
+            $this->clearSensitiveData($message);
+
+            $result = $api->submitMessage($message);
+
+            $this->logger->debug(sprintf('[Flowmailer] Sending message done %s', $result));
+        }
+    }
+
+    private function getRecipients(Message $originalMessage): array
+    {
+        $recipients = [];
+        foreach ($originalMessage->getTo() as $recipient) {
+            $recipients[] = $recipient->getEmail();
+        }
+        foreach ($originalMessage->getCc() as $recipient) {
+            $recipients[] = $recipient->getEmail();
+        }
+        foreach ($originalMessage->getBcc() as $recipient) {
+            $recipients[] = $recipient->getEmail();
+        }
+
+        return $recipients;
     }
 
     public function aroundSendMessage(TransportInterface $subject, \Closure $proceed)
     {
-        if ($this->_enabled) {
-            try {
-                $this->_logger->debug('[Flowmailer] Sending message');
-                if ($subject->getMessage() instanceof \Zend_Mail) {
-                    $messages = $this->_getSubmitMessages($subject);
-                } else {
-                    $messages = $this->_getSubmitMessagesZend2($subject);
-                }
-
-                $accountId = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_account_id', ScopeInterface::SCOPE_STORE);
-                $apiId     = $this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_id', ScopeInterface::SCOPE_STORE);
-                $apiSecret = $this->_encryptor->decrypt($this->_scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', ScopeInterface::SCOPE_STORE));
-
-                $api = $this->_flowmailerApiFactory->create($accountId, $apiId, $apiSecret);
-
-                foreach ($messages as $message) {
-                    if (isset($message->data['user']['password'])) {
-                        $message->data['user']['password'] = null;
-                    }
-                    if (isset($message->data['user']['current_password'])) {
-                        $message->data['user']['current_password'] = null;
-                    }
-                    if (isset($message->data['user']['password_confirmation'])) {
-                        $message->data['user']['password_confirmation'] = null;
-                    }
-
-                    $result = $api->submitMessage($message);
-
-                    if ($result['headers']['ResponseCode'] != 201) {
-                        throw new \Exception(json_encode($result));
-                    }
-
-                    $this->_logger->debug('[Flowmailer] Sending message done '.var_export($result, true));
-                }
-            } catch (\Exception $exception) {
-                $this->_logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
-
-                throw new MailException(new Phrase($exception->getMessage()), $exception);
-            }
-        } else {
-            $this->_logger->debug('[Flowmailer] Module not enabled');
+        if ($this->enabled === false) {
+            $this->logger->debug('[Flowmailer] Module not enabled');
 
             return $proceed();
+        }
+
+        try {
+            $this->logger->debug('[Flowmailer] Sending message');
+
+            $this->submitMessages(
+                $this->getSubmitMessages($subject)
+            );
+        } catch (\Exception $exception) {
+            $this->logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
+
+            throw new MailException(new Phrase($exception->getMessage()), $exception);
         }
     }
 }
