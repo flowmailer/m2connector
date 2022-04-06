@@ -1,16 +1,17 @@
 {
   "name": "flowmailer/m2connector",
-  "description": "Flowmailer M2Connector",
+  "description": "Flowmailer Connector for Magento 2",
   "license": [
     "MIT"
   ],
   "type": "magento2-module",
   "require": {
     "php": "^7.3 || ^8.0",
-    "flowmailer/flowmailer-php74-sdk": "dev-main"
+    "flowmailer/flowmailer-php-sdk-implementation": "^1.0"
   },
   "require-dev": {
     "ergebnis/composer-normalize": "^2.23",
+    "flowmailer/flowmailer-php74-sdk": "^0.1.0",
     "friendsofphp/php-cs-fixer": "^3.4",
     "icanhazstring/composer-unused": "^0.7.12",
     "maglnet/composer-require-checker": "^3.8",
@@ -19,12 +20,6 @@
     "phpunit/phpunit": "^9.5",
     "rector/rector": "^0.12.10",
     "symfony/http-client": "^5.4 || ^6.0"
-  },
-  "repositories": {
-    "gitlab.com/14709695": {
-      "type": "composer",
-      "url": "https://gitlab.com/api/v4/group/14709695/-/packages/composer/packages.json"
-    }
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
