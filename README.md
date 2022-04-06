@@ -1,13 +1,17 @@
-# Flowmailer Magento 2 Connector
+# Magento 2 Connector for Flowmailer 
 
 This extension allows you to configure Magento 2 to send all emails using Flowmailer including raw data.
+
+See [flowmailer.com](https://flowmailer.com/) for more information.
 
 ## Installation
 
 A normal installation would be something equal to:
 ```bash
-composer require flowmailer/m2connector symfony/http-client nyholm/psr7
+composer require flowmailer/flowmailer-php74-sdk flowmailer/m2connector symfony/http-client nyholm/psr7
 ```
+
+Choose your preferred [flowmailer-php-sdk implementations](https://packagist.org/providers/flowmailer/flowmailer-php-sdk-implementation) on packagist, based on your minimum requirement for PHP.  
 
 Choose your preferred [client implementations](https://packagist.org/providers/psr/http-client-implementation) on packagist.  
 See [docs.php-http.org](https://docs.php-http.org/en/latest/httplug/users.html) for details on the HttpClient discovery.  
