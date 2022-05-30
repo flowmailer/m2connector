@@ -19,7 +19,7 @@ use Magento\Sales\Model\Order\Shipment;
 use Magento\Store\Model\Store;
 use Psr\Log\LoggerInterface;
 
-class TransportBuilderPlugin
+final class TransportBuilderPlugin
 {
     /**
      * @var MessageData

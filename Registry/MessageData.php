@@ -7,28 +7,28 @@
 
 namespace Flowmailer\M2Connector\Registry;
 
-class MessageData
+final class MessageData
 {
     /**
      * Template Identifier.
      *
      * @var string|null
      */
-    protected $templateIdentifier = null;
+    private $templateIdentifier = null;
 
     /**
      * Template Variables.
      *
      * @var array|null
      */
-    protected $templateVars = null;
+    private $templateVars = null;
 
     /**
      * Template Options.
      *
      * @var array|null
      */
-    protected $templateOptions = null;
+    private $templateOptions = null;
 
     public function setTemplateIdentifier($templateIdentifier): self
     {
