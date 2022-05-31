@@ -20,27 +20,27 @@ use Magento\Framework\Phrase;
 use Magento\Store\Model\ScopeInterface;
 use Psr\Log\LoggerInterface;
 
-class TransportPlugin
+final class TransportPlugin
 {
     /**
      * @var LoggerInterface
      */
-    protected $logger;
+    private $logger;
 
     /**
      * @var ScopeConfigInterface
      */
-    protected $scopeConfig;
+    private $scopeConfig;
 
     /**
      * @var bool
      */
-    protected $enabled;
+    private $enabled;
 
     /**
      * @var MessageData
      */
-    protected $messageData;
+    private $messageData;
 
     /**
      * @var EncryptorInterface
