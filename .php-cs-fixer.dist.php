@@ -2,9 +2,7 @@
 
 $finder = (new PhpCsFixer\Finder())
     ->in([
-        __DIR__.'/Helper/',
-        __DIR__.'/Plugin/',
-        __DIR__.'/Registry/',
+        __DIR__,
     ])
 ;
 

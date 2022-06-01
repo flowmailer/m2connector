@@ -1,20 +1,28 @@
 {
   "name": "flowmailer/m2connector",
-  "description": "Flowmailer M2Connector",
+  "description": "Flowmailer Connector for Magento 2",
   "license": [
     "MIT"
   ],
   "type": "magento2-module",
+  "require": {
+    "php": "^7.3 || ^8.0",
+    "flowmailer/flowmailer-php-sdk-implementation": "^1.0"
+  },
   "require-dev": {
-    "php": "^7.4",
     "ergebnis/composer-normalize": "^2.23",
+    "flowmailer/flowmailer-php74-sdk": "^1.0",
     "friendsofphp/php-cs-fixer": "^3.4",
     "icanhazstring/composer-unused": "^0.7.12",
     "maglnet/composer-require-checker": "^3.8",
+    "nyholm/psr7": "^1.5",
     "phpstan/phpstan": "^1.3",
     "phpunit/phpunit": "^9.5",
-    "rector/rector": "^0.12.10"
+    "rector/rector": "^0.12.10",
+    "symfony/http-client": "^5.4 || ^6.0"
   },
+  "minimum-stability": "stable",
+  "prefer-stable": true,
   "autoload": {
     "psr-4": {
       "Flowmailer\\M2Connector\\": ""
@@ -25,7 +33,7 @@
   },
   "autoload-dev": {
     "classmap": [
-      "../../magento"
+      "../../magento/"
     ]
   },
   "config": {
@@ -37,16 +45,13 @@
     }
   },
   "extra": {
-    "unused": [
-      "ext-ctype",
-      "ext-iconv"
-    ]
+    "unused": []
   },
   "scripts": {
     "analyse": [
       "composer validate --no-check-lock",
       "composer-unused --no-ansi",
-      "phpstan analyse --level=1 Helper/ Plugin/ Registry/ registration.php"
+      "phpstan analyse"
     ],
     "fix": [
       "php-cs-fixer fix --allow-risky=yes --config .php-cs-fixer.dist.php",

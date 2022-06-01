@@ -7,76 +7,51 @@
 
 namespace Flowmailer\M2Connector\Registry;
 
-class MessageData
+final class MessageData
 {
     /**
      * Template Identifier.
      *
-     * @var string
+     * @var string|null
      */
-    protected $templateIdentifier;
+    private $templateIdentifier = null;
 
     /**
      * Template Variables.
      *
-     * @var array
+     * @var array|null
      */
-    protected $templateVars;
+    private $templateVars = null;
 
     /**
      * Template Options.
      *
-     * @var array
+     * @var array|null
      */
-    protected $templateOptions;
+    private $templateOptions = null;
 
-    public function __construct()
-    {
-    }
-
-    /**
-     * Set template identifier.
-     *
-     * @param string $templateIdentifier
-     *
-     * @return $this
-     */
-    public function setTemplateIdentifier($templateIdentifier)
+    public function setTemplateIdentifier($templateIdentifier): self
     {
         $this->templateIdentifier = $templateIdentifier;
 
         return $this;
     }
 
-    /**
-     * Set template vars.
-     *
-     * @param array $templateVars
-     *
-     * @return $this
-     */
-    public function setTemplateVars($templateVars)
+    public function setTemplateVars(?array $templateVars): self
     {
         $this->templateVars = $templateVars;
 
         return $this;
     }
 
-    /**
-     * Set template options.
-     *
-     * @param array $templateOptions
-     *
-     * @return $this
-     */
-    public function setTemplateOptions($templateOptions)
+    public function setTemplateOptions(?array $templateOptions): self
     {
         $this->templateOptions = $templateOptions;
 
         return $this;
     }
 
-    public function getTemplateVars()
+    public function getTemplateVars(): array
     {
         $data                       = $this->templateVars;
         $data['templateIdentifier'] = $this->templateIdentifier;
@@ -87,10 +62,8 @@ class MessageData
 
     /**
      * Reset object state.
-     *
-     * @return $this
      */
-    public function reset()
+    public function reset(): self
     {
         $this->templateIdentifier = null;
         $this->templateVars       = null;

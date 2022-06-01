@@ -1,0 +1,11 @@
+parameters:
+    level: 5
+    paths:
+        - Helper
+        - Plugin
+        - Registry
+        - registration.php
+    bootstrapFiles:
+        - ../../magento/app/autoload.php
+    scanDirectories:
+        - ../../magento/
