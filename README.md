@@ -8,7 +8,7 @@ See [flowmailer.com](https://flowmailer.com/) for more information.
 
 A normal installation would be something equal to:
 ```bash
-composer require flowmailer/flowmailer-php74-sdk flowmailer/m2connector symfony/http-client nyholm/psr7
+composer require flowmailer/flowmailer-php-sdk flowmailer/m2connector symfony/http-client nyholm/psr7
 ```
 
 Choose your preferred [flowmailer-php-sdk implementations](https://packagist.org/providers/flowmailer/flowmailer-php-sdk-implementation) on packagist, based on your minimum requirement for PHP.  
