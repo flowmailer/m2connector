@@ -7,7 +7,7 @@
   "type": "magento2-module",
   "require": {
     "php": "^7.3 || ^8.0",
-    "flowmailer/flowmailer-php-sdk-implementation": "^1.0"
+    "flowmailer/flowmailer-php-sdk-implementation": "^1.0 || ^2.0"
   },
   "require-dev": {
     "ergebnis/composer-normalize": "^2.23",
