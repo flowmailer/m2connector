@@ -5,9 +5,11 @@
  * Copyright (c) 2018 Flowmailer BV
  */
 
-namespace Flowmailer\M2Connector\Plugin;
+declare(strict_types=1);
 
-use Flowmailer\M2Connector\Registry\MessageData;
+namespace Vendic\FlowmailerM2Connector\Plugin;
+
+use Vendic\FlowmailerM2Connector\Registry\MessageData;
 use Magento\Catalog\Helper\Image;
 use Magento\Framework\DataObject;
 use Magento\Framework\Mail\Template\TransportBuilder;
@@ -21,28 +23,17 @@ use Psr\Log\LoggerInterface;
 
 final class TransportBuilderPlugin
 {
-    /**
-     * @var MessageData
-     */
-    private $messageData;
-
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
     public function __construct(
-        MessageData $messageData,
-        LoggerInterface $logger
+        private readonly MessageData $messageData,
+        private readonly LoggerInterface $logger
     ) {
-        $this->messageData = $messageData;
-        $this->logger      = $logger;
-
-        $this->logger->debug('[Flowmailer] messageData1 '.spl_object_id($messageData));
     }
 
     public function beforeSetTemplateOptions(TransportBuilder $transportBuilder, $templateOptions)
     {
+        $this->logger->debug(
+            sprintf('[Flowmailer] set template options messageData1 %s', spl_object_id($this->messageData))
+        );
         $this->messageData->setTemplateOptions($templateOptions);
 
         return null;
@@ -50,6 +41,13 @@ final class TransportBuilderPlugin
 
     public function beforeSetTemplateIdentifier(TransportBuilder $transportBuilder, $templateIdentifier)
     {
+        $this->logger->debug(
+            sprintf(
+                '[Flowmailer] set template identifier %s messageData1 %s',
+                $templateIdentifier,
+                spl_object_id($this->messageData)
+            )
+        );
         $this->messageData->setTemplateIdentifier($templateIdentifier);
 
         return null;
@@ -57,6 +55,13 @@ final class TransportBuilderPlugin
 
     public function beforeSetTemplateVars(TransportBuilder $transportBuilder, $templateVars)
     {
+        $this->logger->debug(
+            sprintf(
+                '[Flowmailer] set template variables %s for messageData1 %s',
+                json_encode($templateVars),
+                spl_object_id($this->messageData)
+            )
+        );
         $this->messageData->setTemplateVars($this->toData($templateVars));
 
         return null;
@@ -64,6 +69,12 @@ final class TransportBuilderPlugin
 
     public function beforeReset(TransportBuilder $transportBuilder)
     {
+        $this->logger->debug(
+            sprintf(
+                '[Flowmailer] Reset messageData1 %s',
+                spl_object_id($this->messageData)
+            )
+        );
         $this->messageData->reset();
 
         return null;
@@ -92,8 +103,9 @@ final class TransportBuilderPlugin
 
             $data = $data->getData();
             if ($orgdata instanceof Store) {
-                $data['base_url']               = $orgdata->getBaseUrl();
-                $data['product_image_base_url'] = $orgdata->getBaseUrl(UrlInterface::URL_TYPE_MEDIA).'catalog/product';
+                $data['base_url'] = $orgdata->getBaseUrl();
+                $data['product_image_base_url'] = $orgdata->getBaseUrl(UrlInterface::URL_TYPE_MEDIA)
+                    . 'catalog/product';
             }
         } elseif ($data instanceof DataObject) {
             $this->logger->debug(sprintf('[Flowmailer] data object class %s', get_class($data)));
@@ -105,9 +117,11 @@ final class TransportBuilderPlugin
 
         if (is_array($data)) {
             $newData = [];
+
             if ($depth > 8) {
                 return $newData;
             }
+
             foreach ($data as $key => $value) {
                 $newData[$key] = $this->toData($value, $depth + 1);
             }

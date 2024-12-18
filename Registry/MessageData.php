@@ -5,30 +5,17 @@
  * Copyright (c) 2018 Flowmailer BV
  */
 
-namespace Flowmailer\M2Connector\Registry;
+declare(strict_types=1);
+
+namespace Vendic\FlowmailerM2Connector\Registry;
 
 final class MessageData
 {
-    /**
-     * Template Identifier.
-     *
-     * @var string|null
-     */
-    private $templateIdentifier = null;
+    private string|null $templateIdentifier = null;
+    
+    private array|null $templateVars = null;
 
-    /**
-     * Template Variables.
-     *
-     * @var array|null
-     */
-    private $templateVars = null;
-
-    /**
-     * Template Options.
-     *
-     * @var array|null
-     */
-    private $templateOptions = null;
+    private array|null $templateOptions = null;
 
     public function setTemplateIdentifier($templateIdentifier): self
     {
@@ -53,9 +40,9 @@ final class MessageData
 
     public function getTemplateVars(): array
     {
-        $data                       = $this->templateVars;
+        $data = $this->templateVars;
         $data['templateIdentifier'] = $this->templateIdentifier;
-        $data['templateOptions']    = $this->templateOptions;
+        $data['templateOptions'] = $this->templateOptions;
 
         return $data;
     }
@@ -66,8 +53,8 @@ final class MessageData
     public function reset(): self
     {
         $this->templateIdentifier = null;
-        $this->templateVars       = null;
-        $this->templateOptions    = null;
+        $this->templateVars = null;
+        $this->templateOptions = null;
 
         return $this;
     }

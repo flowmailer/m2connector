@@ -1,6 +1,8 @@
 # Magento 2 Connector for Flowmailer 
 
-This extension allows you to configure Magento 2 to send all emails using Flowmailer including raw data.
+Vendic module extends original `Flowmailer_M2Connector` module with applied some fixes for PHP classes.
+General purpose - This extension allows you to configure Magento 2 to send all emails using Flowmailer including raw data.
+
 
 See [flowmailer.com](https://flowmailer.com/) for more information.
 
@@ -8,7 +10,7 @@ See [flowmailer.com](https://flowmailer.com/) for more information.
 
 A normal installation would be something equal to:
 ```bash
-composer require flowmailer/flowmailer-php-sdk flowmailer/m2connector symfony/http-client nyholm/psr7
+composer require flowmailer/flowmailer-php-sdk vendic/flowmailer-m2connector symfony/http-client nyholm/psr7
 ```
 
 Choose your preferred [flowmailer-php-sdk implementations](https://packagist.org/providers/flowmailer/flowmailer-php-sdk-implementation) on packagist, based on your minimum requirement for PHP.  

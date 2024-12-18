@@ -5,11 +5,14 @@
  * Copyright (c) 2018 Flowmailer BV
  */
 
-namespace Flowmailer\M2Connector\Plugin;
+declare(strict_types=1);
 
+namespace Vendic\FlowmailerM2Connector\Plugin;
+
+use Exception;
 use Flowmailer\API\Flowmailer;
 use Flowmailer\API\Model\SubmitMessage;
-use Flowmailer\M2Connector\Registry\MessageData;
+use Vendic\FlowmailerM2Connector\Registry\MessageData;
 use Laminas\Mail\Message;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -22,58 +25,26 @@ use Psr\Log\LoggerInterface;
 
 final class TransportPlugin
 {
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
-
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
-
-    /**
-     * @var bool
-     */
-    private $enabled;
-
-    /**
-     * @var MessageData
-     */
-    private $messageData;
-
-    /**
-     * @var EncryptorInterface
-     */
-    private $encryptor;
-
     public function __construct(
-        ScopeConfigInterface $scopeConfig,
-        Manager $moduleManager,
-        MessageData $messageData,
-        LoggerInterface $logger,
-        EncryptorInterface $encryptor
+        private readonly ScopeConfigInterface $scopeConfig,
+        private readonly Manager $moduleManager,
+        private readonly MessageData $messageData,
+        private readonly LoggerInterface $logger,
+        private readonly EncryptorInterface $encryptor
     ) {
-        $this->scopeConfig = $scopeConfig;
-        $this->messageData = $messageData;
-        $this->logger      = $logger;
-        $this->encryptor   = $encryptor;
-
-        $this->logger->debug(sprintf('[Flowmailer] messageData2 %s', spl_object_id($messageData)));
-
-        $this->enabled = $this->scopeConfig->isSetFlag('fmconnector/api_credentials/enable', ScopeInterface::SCOPE_STORE) && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
     }
 
     private function getSubmitMessages(TransportInterface $transport): \Generator
     {
-        $raw             = $transport->getMessage()->getRawMessage();
-        $rawb64          = base64_encode($raw);
+        $raw = $transport->getMessage()->getRawMessage();
+        $rawb64 = base64_encode($raw);
         $originalMessage = Message::fromString($raw);
 
-        $from     = '';
+        $from = '';
         $fromName = '';
+
         if ($originalMessage->getFrom()->count() > 0) {
-            $from     = $originalMessage->getFrom()->current()->getEmail();
+            $from = $originalMessage->getFrom()->current()->getEmail();
             $fromName = $originalMessage->getFrom()->current()->getName();
         }
 
@@ -89,8 +60,7 @@ final class TransportPlugin
                 ->setMimedata($rawb64)
                 ->setData(
                     json_decode(json_encode($this->messageData->getTemplateVars()))
-                )
-            ;
+                );
         }
     }
 
@@ -115,10 +85,23 @@ final class TransportPlugin
 
     private function createApiClient(): Flowmailer
     {
+        $accountId = $this->scopeConfig->getValue(
+            'fmconnector/api_credentials/api_account_id',
+            ScopeInterface::SCOPE_STORE
+        );
+        $clientId = $this->scopeConfig->getValue(
+            'fmconnector/api_credentials/api_client_id',
+            ScopeInterface::SCOPE_STORE
+        );
+        $clientSecret = $this->scopeConfig->getValue(
+            'fmconnector/api_credentials/api_client_secret',
+            ScopeInterface::SCOPE_STORE
+        );
+        
         return Flowmailer::init(
-            $this->scopeConfig->getValue('fmconnector/api_credentials/api_account_id', ScopeInterface::SCOPE_STORE),
-            $this->scopeConfig->getValue('fmconnector/api_credentials/api_client_id', ScopeInterface::SCOPE_STORE),
-            $this->encryptor->decrypt($this->scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', ScopeInterface::SCOPE_STORE))
+            $accountId,
+            $clientId,
+            $this->encryptor->decrypt($clientSecret)
         )->setLogger($this->logger);
     }
 
@@ -153,7 +136,9 @@ final class TransportPlugin
 
     public function aroundSendMessage(TransportInterface $subject, \Closure $proceed)
     {
-        if ($this->enabled === false) {
+        $this->logger->debug(sprintf('[Flowmailer] messageData2 %s', spl_object_id($this->messageData)));
+
+        if ($this->isExtensionEnabled() === false) {
             $this->logger->debug('[Flowmailer] Module not enabled');
 
             return $proceed();
@@ -165,10 +150,18 @@ final class TransportPlugin
             $this->submitMessages(
                 $this->getSubmitMessages($subject)
             );
-        } catch (\Exception $exception) {
-            $this->logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
+        } catch (Exception $exception) {
+            $this->logger->warning('[Flowmailer] Error sending message : ' . $exception->getMessage());
 
-            throw new MailException(new Phrase($exception->getMessage()), $exception);
+            throw new MailException(__($exception->getMessage()));
         }
+    }
+
+    private function isExtensionEnabled(): bool
+    {
+        return $this->scopeConfig->isSetFlag(
+            'fmconnector/api_credentials/enable',
+            ScopeInterface::SCOPE_STORE
+        ) && $this->moduleManager->isOutputEnabled('Flowmailer_M2Connector');
     }
 }
