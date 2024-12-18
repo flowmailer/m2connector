@@ -1,6 +1,6 @@
 {
-  "name": "flowmailer/m2connector",
-  "description": "Flowmailer Connector for Magento 2",
+  "name": "vendic/flowmailer-m2connector",
+  "description": "Vendic Flowmailer Connector for Magento 2",
   "license": [
     "MIT"
   ],
