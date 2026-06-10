@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Flowmailer Magento 2 Connector package.
  * Copyright (c) 2018 Flowmailer BV
@@ -7,13 +9,16 @@
 
 namespace Flowmailer\M2Connector\Plugin;
 
+use Closure;
+use Exception;
 use Flowmailer\API\Flowmailer;
 use Flowmailer\API\Model\SubmitMessage;
 use Flowmailer\M2Connector\Registry\MessageData;
-use Laminas\Mail\Message;
+use Generator;
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Exception\MailException;
+use Magento\Framework\Mail\MessageInterface;
 use Magento\Framework\Mail\TransportInterface;
 use Magento\Framework\Module\Manager;
 use Magento\Framework\Phrase;
@@ -22,30 +27,15 @@ use Psr\Log\LoggerInterface;
 
 final class TransportPlugin
 {
-    /**
-     * @var LoggerInterface
-     */
-    private $logger;
+    private LoggerInterface $logger;
 
-    /**
-     * @var ScopeConfigInterface
-     */
-    private $scopeConfig;
+    private ScopeConfigInterface $scopeConfig;
 
-    /**
-     * @var bool
-     */
-    private $enabled;
+    private bool $enabled;
 
-    /**
-     * @var MessageData
-     */
-    private $messageData;
+    private MessageData $messageData;
 
-    /**
-     * @var EncryptorInterface
-     */
-    private $encryptor;
+    private EncryptorInterface $encryptor;
 
     public function __construct(
         ScopeConfigInterface $scopeConfig,
@@ -61,20 +51,27 @@ final class TransportPlugin
 
         $this->logger->debug(sprintf('[Flowmailer] messageData2 %s', spl_object_id($messageData)));
 
-        $this->enabled = $this->scopeConfig->isSetFlag('fmconnector/api_credentials/enable', ScopeInterface::SCOPE_STORE) && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
+        $this->enabled = $this->scopeConfig->isSetFlag(
+            'fmconnector/api_credentials/enable',
+            ScopeInterface::SCOPE_STORE
+        ) && $moduleManager->isOutputEnabled('Flowmailer_M2Connector');
     }
 
-    private function getSubmitMessages(TransportInterface $transport): \Generator
+    private function getSubmitMessages(TransportInterface $transport): Generator
     {
-        $raw             = $transport->getMessage()->getRawMessage();
-        $rawb64          = base64_encode($raw);
-        $originalMessage = Message::fromString($raw);
+        $originalMessage = $transport->getMessage();
+
+        // Encode the raw MIME message once; it is identical for every recipient.
+        $rawb64 = base64_encode($originalMessage->getRawMessage());
 
         $from     = '';
         $fromName = '';
-        if ($originalMessage->getFrom()->count() > 0) {
-            $from     = $originalMessage->getFrom()->current()->getEmail();
-            $fromName = $originalMessage->getFrom()->current()->getName();
+
+        $fromAddresses = $originalMessage->getFrom();
+        if ($fromAddresses !== null && count($fromAddresses) > 0) {
+            $firstFrom = current($fromAddresses);
+            $from      = $firstFrom->getEmail();
+            $fromName  = $firstFrom->getName();
         }
 
         $recipients = $this->getRecipients($originalMessage);
@@ -88,7 +85,12 @@ final class TransportPlugin
                 ->setRecipientAddress(trim($recipient))
                 ->setMimedata($rawb64)
                 ->setData(
-                    json_decode(json_encode($this->messageData->getTemplateVars()))
+                    json_decode(
+                        json_encode($this->messageData->getTemplateVars(), JSON_THROW_ON_ERROR),
+                        false,
+                        512,
+                        JSON_THROW_ON_ERROR
+                    )
                 )
             ;
         }
@@ -115,14 +117,28 @@ final class TransportPlugin
 
     private function createApiClient(): Flowmailer
     {
-        return Flowmailer::init(
-            $this->scopeConfig->getValue('fmconnector/api_credentials/api_account_id', ScopeInterface::SCOPE_STORE),
-            $this->scopeConfig->getValue('fmconnector/api_credentials/api_client_id', ScopeInterface::SCOPE_STORE),
-            $this->encryptor->decrypt($this->scopeConfig->getValue('fmconnector/api_credentials/api_client_secret', ScopeInterface::SCOPE_STORE))
-        )->setLogger($this->logger);
+        $accountId = (string) ($this->scopeConfig->getValue(
+            'fmconnector/api_credentials/api_account_id',
+            ScopeInterface::SCOPE_STORE
+        ) ?? '');
+
+        $clientId = (string) ($this->scopeConfig->getValue(
+            'fmconnector/api_credentials/api_client_id',
+            ScopeInterface::SCOPE_STORE
+        ) ?? '');
+
+        $encryptedSecret = (string) ($this->scopeConfig->getValue(
+            'fmconnector/api_credentials/api_client_secret',
+            ScopeInterface::SCOPE_STORE
+        ) ?? '');
+
+        $clientSecret = $this->encryptor->decrypt($encryptedSecret);
+
+        return Flowmailer::init($accountId, $clientId, $clientSecret)
+            ->setLogger($this->logger);
     }
 
-    private function submitMessages(\Generator $messages): void
+    private function submitMessages(Generator $messages): void
     {
         $api = $this->createApiClient();
 
@@ -135,23 +151,38 @@ final class TransportPlugin
         }
     }
 
-    private function getRecipients(Message $originalMessage): array
+    /**
+     * @return array<int, string>
+     */
+    private function getRecipients(MessageInterface $originalMessage): array
     {
         $recipients = [];
+
         foreach ($originalMessage->getTo() as $recipient) {
             $recipients[] = $recipient->getEmail();
         }
-        foreach ($originalMessage->getCc() as $recipient) {
-            $recipients[] = $recipient->getEmail();
+
+        $cc = $originalMessage->getCc();
+        if ($cc !== null) {
+            foreach ($cc as $recipient) {
+                $recipients[] = $recipient->getEmail();
+            }
         }
-        foreach ($originalMessage->getBcc() as $recipient) {
-            $recipients[] = $recipient->getEmail();
+
+        $bcc = $originalMessage->getBcc();
+        if ($bcc !== null) {
+            foreach ($bcc as $recipient) {
+                $recipients[] = $recipient->getEmail();
+            }
         }
 
         return $recipients;
     }
 
-    public function aroundSendMessage(TransportInterface $subject, \Closure $proceed)
+    /**
+     * @throws MailException
+     */
+    public function aroundSendMessage(TransportInterface $subject, Closure $proceed): mixed
     {
         if ($this->enabled === false) {
             $this->logger->debug('[Flowmailer] Module not enabled');
@@ -165,10 +196,12 @@ final class TransportPlugin
             $this->submitMessages(
                 $this->getSubmitMessages($subject)
             );
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             $this->logger->warning('[Flowmailer] Error sending message : '.$exception->getMessage());
 
             throw new MailException(new Phrase($exception->getMessage()), $exception);
         }
+
+        return null;
     }
 }

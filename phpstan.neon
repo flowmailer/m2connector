@@ -1,11 +1,19 @@
+includes:
+    - vendor/bitexpert/phpstan-magento/extension.neon
+    - vendor/bitexpert/phpstan-magento/rules.neon
+
 parameters:
     level: 5
     paths:
-        - Helper
         - Plugin
         - Registry
         - registration.php
-    bootstrapFiles:
-        - ../../magento/app/autoload.php
-    scanDirectories:
-        - ../../magento/
+    excludePaths:
+        - vendor/*
+        - .git/*
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+    magento:
+        # Auto-discovered when bootstrapping the bridge.
+        # See https://github.com/bitExpert/phpstan-magento
+        magentoApplicationRootPath: %currentWorkingDirectory%/../../
