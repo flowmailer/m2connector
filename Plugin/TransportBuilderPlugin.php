@@ -8,7 +8,6 @@
 namespace Flowmailer\M2Connector\Plugin;
 
 use Flowmailer\M2Connector\Registry\MessageData;
-use Magento\Catalog\Helper\Image;
 use Magento\Framework\DataObject;
 use Magento\Framework\Mail\Template\TransportBuilder;
 use Magento\Framework\Model\AbstractExtensibleModel;
