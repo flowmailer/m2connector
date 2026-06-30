@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the Flowmailer Magento 2 Connector package.
  * Copyright (c) 2018 Flowmailer BV
@@ -11,32 +13,33 @@ final class MessageData
 {
     /**
      * Template Identifier.
-     *
-     * @var string|null
      */
-    private $templateIdentifier = null;
+    private ?string $templateIdentifier = null;
 
     /**
      * Template Variables.
      *
-     * @var array|null
+     * @var array<string, mixed>|null
      */
-    private $templateVars = null;
+    private ?array $templateVars = null;
 
     /**
      * Template Options.
      *
-     * @var array|null
+     * @var array<string, mixed>|null
      */
-    private $templateOptions = null;
+    private ?array $templateOptions = null;
 
-    public function setTemplateIdentifier($templateIdentifier): self
+    public function setTemplateIdentifier(?string $templateIdentifier): self
     {
         $this->templateIdentifier = $templateIdentifier;
 
         return $this;
     }
 
+    /**
+     * @param array<string, mixed>|null $templateVars
+     */
     public function setTemplateVars(?array $templateVars): self
     {
         $this->templateVars = $templateVars;
@@ -44,6 +47,9 @@ final class MessageData
         return $this;
     }
 
+    /**
+     * @param array<string, mixed>|null $templateOptions
+     */
     public function setTemplateOptions(?array $templateOptions): self
     {
         $this->templateOptions = $templateOptions;
@@ -51,9 +57,12 @@ final class MessageData
         return $this;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function getTemplateVars(): array
     {
-        $data                       = $this->templateVars;
+        $data                       = $this->templateVars ?? [];
         $data['templateIdentifier'] = $this->templateIdentifier;
         $data['templateOptions']    = $this->templateOptions;
 
