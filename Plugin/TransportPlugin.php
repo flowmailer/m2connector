@@ -12,6 +12,7 @@ namespace Flowmailer\M2Connector\Plugin;
 use Closure;
 use Exception;
 use Flowmailer\API\Flowmailer;
+use Flowmailer\API\FlowmailerInterface;
 use Flowmailer\API\Model\SubmitMessage;
 use Flowmailer\M2Connector\Registry\MessageData;
 use Generator;
@@ -115,7 +116,7 @@ final class TransportPlugin
         $message->setData($data);
     }
 
-    private function createApiClient(): Flowmailer
+    private function createApiClient(): FlowmailerInterface
     {
         $accountId = (string) ($this->scopeConfig->getValue(
             'fmconnector/api_credentials/api_account_id',
